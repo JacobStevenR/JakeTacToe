@@ -1,3 +1,5 @@
+#This package has not been distributed to PyPI
+
 try:
     from setuptools import setup
 except ImportError:
@@ -14,7 +16,7 @@ setup(
 
     install_requires=['nose']
 
-    url=''
+    url='https://github.com/JacobStevenR/JakeTacToe'
 
     
 
