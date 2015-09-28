@@ -1,4 +1,3 @@
-#During random play, no weights or available moves are saved into the database.
 import sqlite3
 import pickle
 import random
