@@ -193,8 +193,8 @@ class TestsDatabase(object):
 
         loss_weights = pickle.loads(r[3])
   
-        assert_equal(1.01, win_weights[3])
-        assert_equal(1.0, loss_weights[3])
+        assert_equal((1.0 + self.player_x.win_weight), win_weights[3])#tests that Player.win_weight gets added after win
+        assert_equal(((1.0 + self.player_x.win_weight)-self.player_x.loss_weight), loss_weights[3])#tests that Player.loss_weight - after loss
 
 
 
