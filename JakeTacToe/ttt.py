@@ -1,3 +1,5 @@
+#Added Player.learn() call to draws as well as losses
+
 import sqlite3
 import pickle
 import random
@@ -6,6 +8,7 @@ from sys import argv
 
 if __name__ == '__main__':
     script, player_x_database, player_o_database, game_type = argv #game_type should = "X", "O", or "random".
+
 
 
 
@@ -119,6 +122,7 @@ class Engine(object):
                 input = player.decide_best(position_id, self.available)    
                 return input
             else:
+                player.get_weights(position_id, self.available)#Make a call to get_weights() to put position in database
                 input = raw_input("\n[ 0 ] [ 1 ] [ 2 ]\n\n[ 3 ] [ 4 ] [ 5 ]\n\n[ 6 ] [ 7 ] [ 8 ]  Player %s's turn: " % player.symbol)  
                 return input
         else: #if self.compete is False, computers pick random moves
@@ -175,14 +179,17 @@ class Engine(object):
         games_played = 0
 
         self.open_connection()
-
+        rep = repeat-1 #To keep track of how many games are left
         for i in range(repeat):
+            
+            
             games_played += 1
             while True:
                 self.play_round(player_x)
                 self.check_for_win(player_x)
                 
                 if player_x.win:
+                    print rep, "games left"
                     x_wins += 1
                     player_x.learn()
                     player_o.learn()
@@ -191,13 +198,19 @@ class Engine(object):
                 draw = self.check_for_draw()                
                 
                 if draw:
+                    print rep, "games left"
                     draws += 1
+                    player_x.win = "Draw"
+                    player_o.win = "Draw"
+                    player_x.learn()
+                    player_o.learn()
                     break
 
                 self.play_round(player_o)
                 self.check_for_win(player_o)
 
                 if player_o.win:
+                    print rep, "games left"
                     o_wins += 1
                     player_o.learn()
                     player_x.learn()
@@ -206,13 +219,20 @@ class Engine(object):
                 draw = self.check_for_draw()
 
                 if draw:
+                    print rep, "games left"
                     draws += 1
+                    player_x.win = "Draw"
+                    player_o.win = "Draw"
+                    player_x.learn()
+                    player_o.learn()
                     break
 
+            rep -= 1
             self.reset_board()
             player_x.reset_player()
             player_o.reset_player()
 
+       
         print "X Wins: %d" % x_wins
         print "O Wins: %d" % o_wins
         print "Draws: %d" % draws
@@ -245,6 +265,13 @@ class Player(object):
         self.moves = []
 
         self.win = False
+
+        #The following three attributes are the increments by which the learn() method modifies the weights
+        self.win_weight = 0.01
+
+        self.draw_weight = 0.01
+
+        self.loss_weight = 0.01
 
 
 
@@ -371,14 +398,18 @@ class Player(object):
             weights = pickle.loads(r[3])
             
             idx = available.index(move)
-            
+          
             if self.win:
-                weights[idx] += 0.01
+                weights[idx] += self.win_weight
+            
+            elif self.win == "Draw":
+                weights[idx] += self.draw_weight
+
             else: 
-                weights[idx] -= 0.01
+                weights[idx] -= self.loss_weight
                 if weights[idx] < 0.01:
                     weights[idx] = 0.01
-
+            
             weights_pkl = pickle.dumps(weights, pickle.HIGHEST_PROTOCOL)
             self.cursor.execute("UPDATE positions SET weights = ? WHERE ID = ?", (weights_pkl, position_id, ))
             self.conn.commit()     
@@ -386,8 +417,7 @@ class Player(object):
 
 
 if __name__ == '__main__':
-
-
+    
     repeat = int(raw_input("How many games do you want to play?\n"))
 
     if game_type == "X":
@@ -428,6 +458,9 @@ if __name__ == '__main__':
 
         player_x.close_connection()
         player_o.close_connection()
+
+
+
 
    
 
